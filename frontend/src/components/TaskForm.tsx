@@ -1,12 +1,43 @@
 import { useState, useEffect } from "react";
-import { STATUS } from "../pages/DashboardPage";
+import { STATUS, Task } from "../pages/DashboardPage";
+import type { TaskData } from "./KanbanBoard";
 
-export default function TaskForm({ onCancel }: { onCancel: () => void }) {
+export default function TaskForm({
+  onCancel,
+  onSubmit,
+  task,
+}: {
+  onCancel: () => void;
+  onSubmit: (taskData: TaskData) => Promise<void>;
+  task: Task | null;
+}) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<STATUS>("pending");
 
-  //   const isEditing = !!task;
+  const isEditing = !!task;
+
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title);
+      setDescription(task.description || "");
+      setStatus(task.status);
+    } else {
+      setTitle("");
+      setDescription("");
+      setStatus("pending");
+    }
+  }, [task]);
+
+  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    onSubmit({
+      title: title.trim(),
+      description: description.trim() || null,
+      status,
+    });
+  }
 
   return (
     <div className={"modal-overlay"} onClick={onCancel}>
@@ -17,7 +48,7 @@ export default function TaskForm({ onCancel }: { onCancel: () => void }) {
             X
           </button>
         </div>
-        <form action="">
+        <form onSubmit={handleSubmit}>
           <div className={"form-group"}>
             <label htmlFor={"form-label"}>Title</label>
             <input
