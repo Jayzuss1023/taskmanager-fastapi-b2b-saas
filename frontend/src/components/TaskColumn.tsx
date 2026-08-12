@@ -11,10 +11,12 @@ export default function TaskColumn({
   status,
   tasks,
   onEdit,
+  onDelete,
 }: {
   status: STATUS;
   tasks: Task[];
   onEdit: ((task: Task) => void) | null;
+  onDelete: (taskId: string) => void;
 }) {
   return (
     <div className={"kanban-column"}>
@@ -24,7 +26,12 @@ export default function TaskColumn({
       </div>
       <div className={"kanban-column-body"}>
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onEdit={onEdit} />
+          <TaskCard
+            key={task.id}
+            task={task}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         ))}
       </div>
     </div>

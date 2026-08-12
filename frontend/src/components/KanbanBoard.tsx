@@ -4,7 +4,7 @@ import { useOrganization } from "@clerk/react";
 import { STATUS, STATUSES, Task } from "../pages/DashboardPage";
 import TaskForm from "./TaskForm";
 import type { GetToken } from "@clerk/types"; // or your specific clerk package
-import { createTask, updateTask } from "../services/api";
+import { createTask, deleteTask, updateTask } from "../services/api";
 import TaskColumn from "./TaskColumn";
 
 export type TaskData = {
@@ -30,9 +30,32 @@ export default function KanbanBoard({
   const role = membership?.role;
   const canManage = role === "org:admin" || role === "org:editor";
 
+  // FILTER TASKS BY STATUS
   const filterTasksByStatus = (status: string) =>
     tasks.filter((t) => t.status === status);
 
+  // DELETE TASK
+  async function handleDelete(taskId: string) {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+
+    const taskToDelete = tasks.find((t) => t.id === taskId);
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+
+    try {
+      await deleteTask(taskId, getToken);
+    } catch (err) {
+      setTasks((prev) =>
+        prev.map((task) => {
+          if (task.id === taskId) {
+            return { ...task };
+          }
+          return task; //  Crucial: Returns the unchanged task instead of undefined
+        }),
+      );
+    }
+  }
+
+  // CREATE OR EDIT TASK
   async function handleSubmit(taskData: TaskData) {
     if (editingTask) {
       const updatedTask = { ...editingTask, ...taskData };
@@ -42,12 +65,14 @@ export default function KanbanBoard({
       );
       try {
         await updateTask(getToken, editingTask.id, editingTask);
+        setShowForm(false);
+        setEditingTask(null);
       } catch (err) {}
-      setShowForm(false);
-      setEditingTask(null);
     } else {
       try {
-        await createTask(getToken, taskData);
+        const newTask = await createTask(getToken, taskData);
+        setTasks((prev) => [...prev, newTask]);
+        setShowForm(false);
       } catch (error) {}
     }
   }
@@ -58,8 +83,8 @@ export default function KanbanBoard({
   }
 
   function handleAddTask() {
-    setShowForm(true);
     setEditingTask(null);
+    setShowForm(true);
   }
 
   function handleCancel() {
@@ -85,6 +110,7 @@ export default function KanbanBoard({
             status={status}
             tasks={filterTasksByStatus(status)}
             onEdit={canManage ? handleEdit : null}
+            onDelete={handleDelete}
           />
         ))}
       </div>

@@ -45,3 +45,10 @@ export async function updateTask(getToken, taskId, task) {
     body: JSON.stringify(task),
   });
 }
+
+// Delete task
+export async function deleteTask(taskId, getToken) {
+  return fetchWithAuth(`/api/tasks/${taskId}`, getToken, {
+    method: "DELETE",
+  });
+}
