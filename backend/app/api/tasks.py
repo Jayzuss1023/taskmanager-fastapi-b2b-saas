@@ -1,13 +1,11 @@
-# Handler for API routesd
-from re import T
+# Handler for API routes
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from starlette.status import HTTP_404_NOT_FOUND
 from app.core.database import get_db
-from app.core.auth import AuthUser, get_current_user, require_view, require_create, require_delete, require_edit
+from app.core.auth import AuthUser, require_view, require_create, require_delete, require_edit
 from app.models.task import Task
-from app.schemas.task import TaskCreate, TaskUpdate, TaskStatusUpdate, TaskResponse
+from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse
 
 # Initialize main route that will concat with other method routes
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
@@ -16,6 +14,7 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 @router.get("", response_model=List[TaskResponse])
 def list_tasks(user: AuthUser = Depends(require_view), db: Session = Depends(get_db)):
     tasks = db.query(Task).filter(Task.org_id == user.org_id).all()
+
     return tasks
 
 
@@ -31,7 +30,7 @@ def create_task(
         description=task_data.description,
         status=task_data.status,
         org_id=user.org_id,
-        created=user.user_id
+        created_by=user.user_id
     )
     db.add(task)
     db.commit()
@@ -40,7 +39,7 @@ def create_task(
     return task
 
 
-# Route to get a single task
+# Route to get task
 @router.get("/{task_id}", response_model=TaskResponse)
 def get_task(
     task_id: str,
@@ -79,14 +78,14 @@ def update_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found"
         )
-    
+
     if task_data.title is not None:
         task.title = task_data.title
     if task_data.description is not None:
         task.description = task_data.description
     if task_data.status is not None:
         task.status = task_data.status
-    
+
     db.commit()
     db.refresh(task)
     return task
@@ -104,12 +103,12 @@ def delete_task(
         Task.org_id == user.org_id
     ).first()
 
-    if not Task:
+    if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found"
         )
 
-    db.delete(Task)
+    db.delete(task)
     db.commit()
     return None

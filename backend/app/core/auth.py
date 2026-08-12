@@ -7,7 +7,6 @@
 import httpx
 from fastapi import Depends, HTTPException, Request, status
 from clerk_backend_api.security import AuthenticateRequestOptions
-from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 from app.core.config import settings
 from app.core.clerk import clerk
 
@@ -18,20 +17,23 @@ class AuthUser:
         self.org_permissions = org_permissions
 
     def has_permission(self, permission: str) -> bool:
-        return self in self.org_permissions
-    
+        return permission in self.org_permissions
+
     @property
-    def can_view(self):
-        self.has_permission("org:task:view")
+    def can_view(self) -> bool:
+        return self.has_permission("org:tasks:view")
 
-    def can_create(self):
-        self.has_permission("org:task:create")
+    @property
+    def can_create(self) -> bool:
+        return self.has_permission("org:tasks:create")
 
-    def can_delete(self):
-        self.has_permission("org:task:delete")
+    @property
+    def can_delete(self) -> bool:
+        return self.has_permission("org:tasks:delete")
 
-    def can_edit(self):
-        self.has_permission("org:task:edit")
+    @property
+    def can_edit(self) -> bool:
+        return self.has_permission("org:tasks:edit")
 
 # convert to httpx request to use directly with Clerk module
 def convert_to_httpx_request(fastapi_request: Request) -> httpx.Request:
@@ -40,8 +42,8 @@ def convert_to_httpx_request(fastapi_request: Request) -> httpx.Request:
         url=str(fastapi_request.url),
         headers=dict(fastapi_request.headers)
     )
-    
-async def get_current_user(request: Request):
+
+async def get_current_user(request: Request) -> AuthUser:
     httpx_request = convert_to_httpx_request(request)
 
     # Verify that the data passed by user in the frontend matches Clerk's data
@@ -71,7 +73,6 @@ async def get_current_user(request: Request):
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
         )
 
-
     if not org_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No organization selected"
@@ -93,24 +94,24 @@ def require_create(user: AuthUser = Depends(get_current_user)) -> AuthUser:
     if not user.can_create:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Delete permission required"
+            detail="Create permission required"
         )
-    
+
     return user
 
 def require_delete(user: AuthUser = Depends(get_current_user)) -> AuthUser:
     if not user.can_delete:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Delete permission required"
         )
-    
+
     return user
 
 def require_edit(user: AuthUser = Depends(get_current_user)) -> AuthUser:
     if not user.can_edit:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Edit permission required"
         )
 

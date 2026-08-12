@@ -1,0 +1,5 @@
+{
+	"dependencies": {
+		"@clerk/types": "^4.101.20"
+	}
+}

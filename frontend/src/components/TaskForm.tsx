@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { STATUS, Task } from "../pages/DashboardPage";
 import type { TaskData } from "./KanbanBoard";
@@ -43,7 +44,9 @@ export default function TaskForm({
     <div className={"modal-overlay"} onClick={onCancel}>
       <div className={"modal"} onClick={(e) => e.stopPropagation()}>
         <div className={"modal-header"}>
-          <h2 className={"modal-title"}>New Task</h2>
+          <h2 className={"modal-title"}>
+            {isEditing ? "Edit Task" : "New Task"}
+          </h2>
           <button className={"modal-close"} onClick={onCancel}>
             X
           </button>
@@ -100,7 +103,7 @@ export default function TaskForm({
               Cancel
             </button>
             <button className={"btn btn-primary"} type={"submit"}>
-              Create Task
+              {isEditing ? "Save Changes" : "Create Task"}
             </button>
           </div>
         </form>
